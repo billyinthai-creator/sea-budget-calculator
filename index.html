@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>SEA Budget Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c26;
+    --card: #1e2333;
+    --border: #2a3040;
+    --gold: #c9a84c;
+    --gold-light: #e8c96e;
+    --teal: #3ecfbf;
+    --text: #e8e4da;
+    --muted: #7a8298;
+    --danger: #e06c75;
+    --green: #5ecc8a;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 32px;
+  }
+
+  /* Header */
+  .header {
+    padding: 24px 20px 16px;
+    background: linear-gradient(180deg, #0a0d14 0%, var(--bg) 100%);
+    position: sticky; top: 0; z-index: 10;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold), #7a5c1e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--gold-light); letter-spacing: 0.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .currency-badge {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; font-size: 12px;
+    color: var(--teal); font-weight: 500; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .currency-badge:active { transform: scale(0.95); }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0;
+    padding: 12px 20px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    color: var(--muted); background: none; border: none;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--gold); color: #0a0d14; font-weight: 600;
+  }
+
+  /* Sections */
+  .section { padding: 16px 20px; }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; font-weight: 500; }
+
+  /* Country Selector */
+  .country-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .country-card {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: var(--radius); padding: 14px 12px;
+    cursor: pointer; transition: all 0.2s; text-align: left;
+    position: relative; overflow: hidden;
+  }
+  .country-card.selected {
+    border-color: var(--gold);
+    background: #1e2333;
+  }
+  .country-card:active { transform: scale(0.97); }
+  .country-flag { font-size: 24px; margin-bottom: 6px; display: block; }
+  .country-name { font-size: 13px; font-weight: 600; }
+  .country-currency { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .country-check {
+    position: absolute; top: 8px; right: 8px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--gold); display: flex; align-items: center; justify-content: center;
+    font-size: 10px; opacity: 0; transition: opacity 0.2s;
+  }
+  .country-card.selected .country-check { opacity: 1; }
+
+  /* Inputs */
+  .input-group { margin-bottom: 14px; }
+  .input-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .input-row { display: flex; align-items: center; gap: 8px; }
+  .input-field {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px 14px;
+    color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  .input-field:focus { border-color: var(--gold); }
+  .input-field::placeholder { color: var(--muted); }
+
+  /* Style selector */
+  .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .style-btn {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 8px;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .style-btn.active { border-color: var(--teal); }
+  .style-btn:active { transform: scale(0.97); }
+  .style-icon { font-size: 20px; margin-bottom: 4px; }
+  .style-name { font-size: 11px; font-weight: 600; }
+  .style-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* Slider */
+  .slider-wrap { position: relative; padding: 8px 0; }
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--pct, 50%), var(--border) var(--pct, 50%), var(--border) 100%);
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--gold);
+    border: 3px solid var(--bg); cursor: pointer;
+    box-shadow: 0 0 0 2px var(--gold);
+  }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* Results */
+  .result-hero {
+    background: linear-gradient(135deg, #1a1e2d 0%, #1e2333 100%);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 14px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .result-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(201,168,76,0.07) 0%, transparent 70%);
+  }
+  .result-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .result-amount {
+    font-family: 'Playfair Display', serif; font-size: 38px;
+    color: var(--gold-light); font-weight: 700; line-height: 1;
+  }
+  .result-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  .breakdown-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  .breakdown-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px;
+  }
+  .breakdown-icon { font-size: 18px; margin-bottom: 6px; }
+  .breakdown-label { font-size: 10px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+  .breakdown-amount { font-size: 16px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .breakdown-per { font-size: 10px; color: var(--muted); }
+
+  /* Budget bar */
+  .budget-bar-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+  .bar-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
+  .bar-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(.23,1,.32,1); }
+  .bar-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Tips */
+  .tip-card {
+    background: var(--card); border-left: 3px solid var(--teal);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 12px 14px; margin-bottom: 8px;
+    font-size: 13px; line-height: 1.5;
+  }
+  .tip-card strong { color: var(--teal); }
+
+  /* Compare table */
+  .compare-scroll { overflow-x: auto; scrollbar-width: none; }
+  .compare-scroll::-webkit-scrollbar { display: none; }
+  .compare-table { width: 100%; border-collapse: collapse; min-width: 400px; }
+  .compare-table th {
+    background: var(--card); padding: 10px 12px;
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:hover td { background: rgba(201,168,76,0.04); }
+  .badge-cheap { color: var(--green); font-weight: 600; }
+  .badge-mid { color: var(--gold); font-weight: 600; }
+  .badge-exp { color: var(--danger); font-weight: 600; }
+
+  /* CTA */
+  .cta-btn {
+    width: 100%; padding: 15px; border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--gold), #a07830);
+    color: #0a0d14; font-size: 15px; font-weight: 700;
+    border: none; cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .cta-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  /* Tab content */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Currency modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; display: none; align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    width: 100%; background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 20px; max-height: 60vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .currency-opt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-radius: var(--radius-sm);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .currency-opt:hover, .currency-opt.selected { background: var(--card); }
+  .currency-flag { font-size: 20px; }
+  .currency-name { font-size: 14px; font-weight: 500; }
+  .currency-code { font-size: 11px; color: var(--muted); }
+  .currency-rate { margin-left: auto; font-size: 13px; color: var(--gold); }
+
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* Animated number */
+  .animated-num { transition: all 0.3s; }
+
+  .empty-state { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  .deals-btn {
+    display: block; width: 100%; margin-top: 10px; padding: 14px;
+    border-radius: var(--radius); border: 1.5px solid var(--teal);
+    background: transparent; color: var(--teal);
+    font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    text-align: center; text-decoration: none; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .deals-btn:active { background: rgba(62,207,191,0.08); transform: scale(0.98); }
+
+  .sponsored-link {
+    display: block; text-align: center; margin-top: 16px;
+    padding: 12px; border-radius: var(--radius-sm);
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); font-size: 12px; text-decoration: none;
+    transition: all 0.2s;
+  }
+  .sponsored-link span { color: var(--teal); font-weight: 600; }
+  .sponsored-link:active { background: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- Currency Modal -->
+<div class="modal-overlay" id="currencyModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">Display Currency</div>
+    <div id="currencyList"></div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">🗺️</div>
+      <div>
+        <div class="logo-text">SEA Budget</div>
+        <div class="logo-sub">Southeast Asia Calculator</div>
+      </div>
+    </div>
+    <div class="currency-badge" onclick="openModal()" id="currencyBtn">$ USD</div>
+  </div>
+  <div class="tabs" id="tabsBar">
+    <button class="tab active" onclick="switchTab('plan')">Trip Planner</button>
+    <button class="tab" onclick="switchTab('compare')">Country Compare</button>
+    <button class="tab" onclick="switchTab('tips')">Money Tips</button>
+  </div>
+</div>
+
+<!-- ===== TAB: PLAN ===== -->
+<div class="tab-content active" id="tab-plan">
+
+  <div class="section">
+    <div class="section-title">Choose your destination</div>
+    <div class="country-grid" id="countryGrid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Travel details</div>
+
+    <div class="input-group">
+      <div class="input-label">Number of days</div>
+      <div class="input-row">
+        <button style="background:var(--card);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:8px;font-size:20px;cursor:pointer;flex-shrink:0" onclick="adjustDays(-1)">−</button>
+        <input class="input-field" type="number" id="daysInput" value="7" min="1" max="365" oninput="recalc()">
+        <button style="background:var(--card);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:8px;font-size:20px;cursor:pointer;flex-shrink:0" onclick="adjustDays(1)">+</button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">Number of travelers</div>
+      <div class="input-row">
+        <button style="background:var(--card);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:8px;font-size:20px;cursor:pointer;flex-shrink:0" onclick="adjustTravelers(-1)">−</button>
+        <input class="input-field" type="number" id="travelersInput" value="1" min="1" max="20" oninput="recalc()">
+        <button style="background:var(--card);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:8px;font-size:20px;cursor:pointer;flex-shrink:0" onclick="adjustTravelers(1)">+</button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">Travel style</div>
+      <div class="style-grid" id="styleGrid"></div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">Daily extras buffer <span id="bufferVal" style="color:var(--gold)">$20</span></div>
+      <div class="slider-wrap">
+        <input type="range" id="bufferSlider" min="0" max="100" value="20" oninput="updateBuffer(this)">
+        <div class="slider-labels"><span>$0</span><span>$50</span><span>$100</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="resultsSection" style="display:none">
+    <div class="section-title">Your estimated budget</div>
+
+    <div class="result-hero">
+      <div class="result-label">Total Trip Cost</div>
+      <div class="result-amount" id="totalAmount">—</div>
+      <div class="result-sub" id="totalSub">for 7 days · 1 traveler</div>
+    </div>
+
+    <div class="breakdown-grid">
+      <div class="breakdown-card">
+        <div class="breakdown-icon">🏨</div>
+        <div class="breakdown-label">Accommodation</div>
+        <div class="breakdown-amount" id="brkAccom">—</div>
+        <div class="breakdown-per" id="brkAccomPer">per night</div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-icon">🍜</div>
+        <div class="breakdown-label">Food</div>
+        <div class="breakdown-amount" id="brkFood">—</div>
+        <div class="breakdown-per">per day</div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-icon">🛵</div>
+        <div class="breakdown-label">Transport</div>
+        <div class="breakdown-amount" id="brkTransport">—</div>
+        <div class="breakdown-per">per day</div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-icon">🎭</div>
+        <div class="breakdown-label">Activities</div>
+        <div class="breakdown-amount" id="brkActivities">—</div>
+        <div class="breakdown-per">per day</div>
+      </div>
+    </div>
+
+    <div class="budget-bar-wrap">
+      <div class="bar-header">
+        <span style="font-size:12px;font-weight:600">Spending Breakdown</span>
+        <span style="color:var(--muted);font-size:11px">by category</span>
+      </div>
+      <div id="barContainer"></div>
+      <div class="bar-legend" id="barLegend"></div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">Daily all-in average: <span id="dailyAvg" style="color:var(--gold)">—</span></div>
+    </div>
+
+    <button class="cta-btn" onclick="copyBudget()">📋 Copy Budget Summary</button>
+    <a href="https://omg10.com/4/10011412" target="_blank" rel="noopener" class="deals-btn">✈️ Find Travel Deals for Your Trip</a>
+  </div>
+
+  <div id="noCountry" class="empty-state">
+    <div class="empty-icon">🌴</div>
+    Pick a destination above to see your budget estimate
+  </div>
+</div>
+
+<!-- ===== TAB: COMPARE ===== -->
+<div class="tab-content" id="tab-compare">
+  <div class="section">
+    <div class="section-title">Daily cost comparison · all styles</div>
+    <div class="compare-scroll">
+      <table class="compare-table" id="compareTable"></table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Budget rating</div>
+    <div id="compareCards"></div>
+  </div>
+</div>
+
+<!-- ===== TAB: TIPS ===== -->
+<div class="tab-content" id="tab-tips">
+  <div class="section">
+    <div class="section-title">Money-saving tips for Southeast Asia</div>
+    <div id="tipsList"></div>
+    <a href="https://omg10.com/4/10011412" target="_blank" rel="noopener" class="sponsored-link">
+      🌏 <span>Sponsored:</span> Find the best deals on flights &amp; hotels for your SEA trip →
+    </a>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const COUNTRIES = [
+  { id:'th', flag:'🇹🇭', name:'Thailand',    currency:'THB', code:'THB', rate:35.2,  costs:{budget:{accom:8,food:8,transport:5,activities:5},mid:{accom:30,food:20,transport:12,activities:15},luxury:{accom:120,food:60,transport:40,activities:50}} },
+  { id:'vn', flag:'🇻🇳', name:'Vietnam',     currency:'VND', code:'VND', rate:25300, costs:{budget:{accom:7,food:6,transport:4,activities:4},mid:{accom:25,food:15,transport:10,activities:12},luxury:{accom:100,food:50,transport:35,activities:40}} },
+  { id:'id', flag:'🇮🇩', name:'Indonesia',   currency:'IDR', code:'IDR', rate:16200, costs:{budget:{accom:9,food:7,transport:4,activities:5},mid:{accom:35,food:18,transport:12,activities:15},luxury:{accom:130,food:55,transport:40,activities:50}} },
+  { id:'my', flag:'🇲🇾', name:'Malaysia',    currency:'MYR', code:'MYR', rate:4.7,   costs:{budget:{accom:12,food:10,transport:6,activities:6},mid:{accom:40,food:25,transport:15,activities:18},luxury:{accom:150,food:70,transport:50,activities:55}} },
+  { id:'ph', flag:'🇵🇭', name:'Philippines', currency:'PHP', code:'PHP', rate:57.5,  costs:{budget:{accom:10,food:8,transport:5,activities:6},mid:{accom:35,food:18,transport:12,activities:14},luxury:{accom:120,food:55,transport:38,activities:45}} },
+  { id:'kh', flag:'🇰🇭', name:'Cambodia',    currency:'USD', code:'USD', rate:1,     costs:{budget:{accom:8,food:6,transport:4,activities:5},mid:{accom:25,food:14,transport:10,activities:10},luxury:{accom:100,food:45,transport:30,activities:35}} },
+  { id:'la', flag:'🇱🇦', name:'Laos',        currency:'LAK', code:'LAK', rate:22000, costs:{budget:{accom:7,food:5,transport:3,activities:4},mid:{accom:22,food:12,transport:8,activities:9},luxury:{accom:90,food:40,transport:28,activities:30}} },
+  { id:'mm', flag:'🇲🇲', name:'Myanmar',     currency:'MMK', code:'MMK', rate:2100,  costs:{budget:{accom:9,food:6,transport:4,activities:4},mid:{accom:28,food:14,transport:9,activities:10},luxury:{accom:110,food:45,transport:30,activities:35}} },
+];
+
+const STYLES = [
+  { id:'budget',  icon:'🎒', name:'Budget',  desc:'Hostels, street food' },
+  { id:'mid',     icon:'🏖️', name:'Mid-range',desc:'Guesthouses, restaurants' },
+  { id:'luxury',  icon:'🏨', name:'Luxury',  desc:'Hotels, fine dining' },
+];
+
+const CURRENCIES = [
+  { code:'USD', symbol:'$',  name:'US Dollar',      flag:'🇺🇸', rate:1      },
+  { code:'EUR', symbol:'€',  name:'Euro',            flag:'🇪🇺', rate:0.92   },
+  { code:'GBP', symbol:'£',  name:'British Pound',   flag:'🇬🇧', rate:0.79   },
+  { code:'AUD', symbol:'A$', name:'Australian Dollar',flag:'🇦🇺', rate:1.53  },
+  { code:'SGD', symbol:'S$', name:'Singapore Dollar', flag:'🇸🇬', rate:1.34  },
+  { code:'THB', symbol:'฿',  name:'Thai Baht',        flag:'🇹🇭', rate:35.2  },
+  { code:'JPY', symbol:'¥',  name:'Japanese Yen',     flag:'🇯🇵', rate:149.5 },
+  { code:'CNY', symbol:'¥',  name:'Chinese Yuan',     flag:'🇨🇳', rate:7.24  },
+  { code:'MYR', symbol:'RM', name:'Malaysian Ringgit',flag:'🇲🇾', rate:4.7   },
+  { code:'IDR', symbol:'Rp', name:'Indonesian Rupiah',flag:'🇮🇩', rate:16200 },
+];
+
+const TIPS = [
+  { icon:'🏧', title:'ATMs & Cash',    body:'Withdraw from bank-affiliated ATMs only. Avoid airport exchange kiosks — banks give 5–10% better rates. Carry some USD as backup; it\'s accepted widely in Cambodia and Vietnam.' },
+  { icon:'🍜', title:'Eat Where Locals Eat', body:'Street stalls and market food is often fresher and cheaper than tourist restaurants. A full meal in Thailand or Vietnam rarely costs more than $2–3.' },
+  { icon:'🛵', title:'Rent a Scooter', body:'In many cities a scooter rental runs $5–8/day — far cheaper than tuk-tuks or taxis. Use grab/GoJek apps for fair pricing on ride-hailing instead of negotiating.' },
+  { icon:'🌙', title:'Travel Overnight', body:'Overnight sleeper buses or trains save a night\'s accommodation cost while covering distance. The popular Hanoi–Sapa or Bangkok–Chiang Mai routes are comfortable options.' },
+  { icon:'📅', title:'Shoulder Season', body:'April–May and September–October offer 20–40% lower hotel prices with fewer crowds. Avoid peak Christmas/New Year unless you book months ahead.' },
+  { icon:'💳', title:'No-FX-Fee Cards', body:'Use a Wise, Revolut, or Charles Schwab card to avoid the 3–5% foreign transaction fees banks charge. You\'ll save noticeably over a 2-week trip.' },
+  { icon:'🎟️', title:'Book Activities Direct', body:'Skip hotel front desks for tours — they add 20–40% markup. Walk to the tour operator directly or use Klook/Viator for comparison pricing.' },
+  { icon:'🏨', title:'Negotiate Long Stays', body:'Staying 5+ nights? Ask for a weekly rate — most guesthouses and apartments drop 15–30% for extended stays, especially outside peak season.' },
+];
+
+const BAR_COLORS = ['#c9a84c','#3ecfbf','#e06c75','#5ecc8a'];
+const CAT_LABELS = ['Accommodation','Food','Transport','Activities'];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let selectedCountry = null;
+let selectedStyle   = 'mid';
+let displayCurrency = CURRENCIES[0];
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildCountryGrid();
+  buildStyleGrid();
+  buildCompareTable();
+  buildTips();
+  buildCurrencyList();
+  updateBuffer(document.getElementById('bufferSlider'));
+  Telegram?.WebApp?.ready?.();
+  Telegram?.WebApp?.expand?.();
+});
+
+// ─── COUNTRY GRID ─────────────────────────────────────────────────────────────
+function buildCountryGrid() {
+  const grid = document.getElementById('countryGrid');
+  grid.innerHTML = COUNTRIES.map(c => `
+    <div class="country-card" id="cc-${c.id}" onclick="selectCountry('${c.id}')">
+      <span class="country-flag">${c.flag}</span>
+      <div class="country-name">${c.name}</div>
+      <div class="country-currency">${c.currency}</div>
+      <div class="country-check">✓</div>
+    </div>
+  `).join('');
+}
+
+function selectCountry(id) {
+  selectedCountry = COUNTRIES.find(c => c.id === id);
+  document.querySelectorAll('.country-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('cc-' + id).classList.add('selected');
+  recalc();
+}
+
+// ─── STYLE GRID ───────────────────────────────────────────────────────────────
+function buildStyleGrid() {
+  const grid = document.getElementById('styleGrid');
+  grid.innerHTML = STYLES.map(s => `
+    <div class="style-btn ${s.id===selectedStyle?'active':''}" id="sb-${s.id}" onclick="selectStyle('${s.id}')">
+      <div class="style-icon">${s.icon}</div>
+      <div class="style-name">${s.name}</div>
+      <div class="style-desc">${s.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectStyle(id) {
+  selectedStyle = id;
+  document.querySelectorAll('.style-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('sb-' + id).classList.add('active');
+  recalc();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function fmt(usd) {
+  const v = usd * displayCurrency.rate;
+  const sym = displayCurrency.symbol;
+  if (v >= 10000) return sym + Math.round(v).toLocaleString();
+  if (v >= 100)   return sym + Math.round(v).toLocaleString();
+  return sym + v.toFixed(0);
+}
+
+function adjustDays(delta) {
+  const el = document.getElementById('daysInput');
+  el.value = Math.max(1, Math.min(365, parseInt(el.value||1) + delta));
+  recalc();
+}
+function adjustTravelers(delta) {
+  const el = document.getElementById('travelersInput');
+  el.value = Math.max(1, Math.min(20, parseInt(el.value||1) + delta));
+  recalc();
+}
+
+function updateBuffer(el) {
+  const v = parseInt(el.value);
+  const pct = (v / 100) * 100;
+  el.style.setProperty('--pct', pct + '%');
+  document.getElementById('bufferVal').textContent = '$' + v;
+  recalc();
+}
+
+// ─── RECALC ───────────────────────────────────────────────────────────────────
+function recalc() {
+  if (!selectedCountry) {
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('noCountry').style.display = 'block';
+    return;
+  }
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('noCountry').style.display = 'none';
+
+  const days      = Math.max(1, parseInt(document.getElementById('daysInput').value) || 7);
+  const travelers = Math.max(1, parseInt(document.getElementById('travelersInput').value) || 1);
+  const buffer    = parseInt(document.getElementById('bufferSlider').value) || 0;
+  const costs     = selectedCountry.costs[selectedStyle];
+
+  const dailyPerPerson = costs.accom + costs.food + costs.transport + costs.activities + buffer;
+  const total = dailyPerPerson * days * travelers;
+
+  document.getElementById('totalAmount').textContent = fmt(total);
+  document.getElementById('totalSub').textContent = `for ${days} day${days!==1?'s':''} · ${travelers} traveler${travelers!==1?'s':''}`;
+
+  document.getElementById('brkAccom').textContent    = fmt(costs.accom * travelers);
+  document.getElementById('brkAccomPer').textContent  = `per night × ${days}`;
+  document.getElementById('brkFood').textContent      = fmt(costs.food * travelers);
+  document.getElementById('brkTransport').textContent = fmt(costs.transport * travelers);
+  document.getElementById('brkActivities').textContent= fmt(costs.activities * travelers);
+  document.getElementById('dailyAvg').textContent     = fmt(dailyPerPerson * travelers) + '/day';
+
+  const cats = [costs.accom, costs.food, costs.transport, costs.activities];
+  const sum  = cats.reduce((a,b)=>a+b,0) || 1;
+  const barContainer = document.getElementById('barContainer');
+  const legend = document.getElementById('barLegend');
+  barContainer.innerHTML = CAT_LABELS.map((label,i) => {
+    const pct = Math.round((cats[i]/sum)*100);
+    return `<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+        <span>${label}</span><span>${pct}%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${BAR_COLORS[i]}"></div></div>
+    </div>`;
+  }).join('');
+  legend.innerHTML = CAT_LABELS.map((l,i)=>`
+    <div class="legend-item"><div class="legend-dot" style="background:${BAR_COLORS[i]}"></div>${l}</div>
+  `).join('');
+}
+
+// ─── COMPARE TABLE ────────────────────────────────────────────────────────────
+function buildCompareTable() {
+  const t = document.getElementById('compareTable');
+  const budgetRank = [...COUNTRIES].sort((a,b)=>{
+    const da = Object.values(a.costs.budget).reduce((s,v)=>s+v,0);
+    const db = Object.values(b.costs.budget).reduce((s,v)=>s+v,0);
+    return da-db;
+  });
+
+  t.innerHTML = `<thead><tr>
+    <th>Country</th>
+    <th>🎒 Budget</th>
+    <th>🏖️ Mid</th>
+    <th>🏨 Luxury</th>
+    <th>Rating</th>
+  </tr></thead><tbody>` +
+  COUNTRIES.map(c => {
+    const b = Object.values(c.costs.budget).reduce((s,v)=>s+v,0);
+    const m = Object.values(c.costs.mid).reduce((s,v)=>s+v,0);
+    const l = Object.values(c.costs.luxury).reduce((s,v)=>s+v,0);
+    const rank = budgetRank.findIndex(x=>x.id===c.id);
+    const badge = rank < 3 ? `<span class="badge-cheap">💚 Cheap</span>` :
+                  rank < 6 ? `<span class="badge-mid">🟡 Mid</span>` :
+                             `<span class="badge-exp">🔴 Pricier</span>`;
+    return `<tr>
+      <td>${c.flag} ${c.name}</td>
+      <td class="badge-cheap">$${b}/day</td>
+      <td class="badge-mid">$${m}/day</td>
+      <td style="color:var(--muted)">$${l}/day</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('') + '</tbody>';
+
+  const cards = document.getElementById('compareCards');
+  cards.innerHTML = budgetRank.slice(0,3).map((c,i) => `
+    <div class="tip-card" style="margin-bottom:8px;border-color:${['#5ecc8a','#c9a84c','#3ecfbf'][i]}">
+      ${['🥇','🥈','🥉'][i]} <strong style="color:${['#5ecc8a','#c9a84c','#3ecfbf'][i]}">${c.flag} ${c.name}</strong> — 
+      Budget traveler daily spend from just $${Object.values(c.costs.budget).reduce((s,v)=>s+v,0)}/day
+    </div>
+  `).join('');
+}
+
+// ─── TIPS ─────────────────────────────────────────────────────────────────────
+function buildTips() {
+  document.getElementById('tipsList').innerHTML = TIPS.map(t => `
+    <div class="tip-card">
+      <div style="font-size:18px;margin-bottom:4px">${t.icon} <strong>${t.title}</strong></div>
+      ${t.body}
+    </div>
+  `).join('');
+}
+
+// ─── CURRENCY ─────────────────────────────────────────────────────────────────
+function buildCurrencyList() {
+  document.getElementById('currencyList').innerHTML = CURRENCIES.map(c => `
+    <div class="currency-opt ${c.code==='USD'?'selected':''}" id="copt-${c.code}" onclick="setCurrency('${c.code}')">
+      <span class="currency-flag">${c.flag}</span>
+      <div>
+        <div class="currency-name">${c.symbol} ${c.name}</div>
+        <div class="currency-code">${c.code}</div>
+      </div>
+      <div class="currency-rate">1 USD = ${c.rate} ${c.code}</div>
+    </div>
+  `).join('');
+}
+function openModal()  { document.getElementById('currencyModal').classList.add('open'); }
+function closeModal() { document.getElementById('currencyModal').classList.remove('open'); }
+function setCurrency(code) {
+  displayCurrency = CURRENCIES.find(c=>c.code===code);
+  document.querySelectorAll('.currency-opt').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('copt-'+code).classList.add('selected');
+  document.getElementById('currencyBtn').textContent = displayCurrency.symbol + ' ' + code;
+  closeModal();
+  buildCompareTable();
+  recalc();
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.tab')[['plan','compare','tips'].indexOf(name)].classList.add('active');
+}
+
+// ─── COPY ─────────────────────────────────────────────────────────────────────
+function copyBudget() {
+  if (!selectedCountry) return;
+  const days      = parseInt(document.getElementById('daysInput').value)||7;
+  const travelers = parseInt(document.getElementById('travelersInput').value)||1;
+  const costs     = selectedCountry.costs[selectedStyle];
+  const buffer    = parseInt(document.getElementById('bufferSlider').value)||0;
+  const total     = (costs.accom+costs.food+costs.transport+costs.activities+buffer)*days*travelers;
+  const text = `🗺️ SEA Budget Calculator\n\n` +
+    `📍 ${selectedCountry.flag} ${selectedCountry.name}\n` +
+    `🎯 Style: ${selectedStyle}\n` +
+    `📅 ${days} days · ${travelers} traveler${travelers!==1?'s':''}\n\n` +
+    `💰 Total: ${fmt(total)}\n` +
+    `🏨 Accommodation: ${fmt(costs.accom)}/night\n` +
+    `🍜 Food: ${fmt(costs.food)}/day\n` +
+    `🛵 Transport: ${fmt(costs.transport)}/day\n` +
+    `🎭 Activities: ${fmt(costs.activities)}/day\n\n` +
+    `Calculated with SEA Budget Calculator 🌴`;
+  navigator.clipboard?.writeText(text).then(()=>{
+    const btn = document.querySelector('.cta-btn');
+    btn.textContent = '✅ Copied!';
+    setTimeout(()=>{ btn.textContent = '📋 Copy Budget Summary'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
